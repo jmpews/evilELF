@@ -2,7 +2,6 @@
 #include <link.h>
 #include <sys/ptrace.h>
 
-
 #include <stdlib.h>
 #include <stdbool.h> // bool type
 
@@ -18,8 +17,6 @@
 // #define DL_SYMBOL_ADDRESS(map, ref) \
 // (void *) (LOOKUP_VALUE_ADDRESS (map) + ref->st_value)
 
-
-
 // echo | gcc -E -dM - | grep 64
 // ld --verbose
 #ifdef __x86_64__
@@ -32,90 +29,81 @@
 #include <link.h>
 #undef link_map
 
-
 // linker's link_map
-typedef struct dyn_info {
+typedef struct dyn_info
+{
 
     // pltgot
     struct link_map_public *linkmap_public;
 
     // section
-	long dynsym_addr;
-	long dynstr_addr;
-	long gnuhash_addr;
+    long dynsym_addr;
+    long dynstr_addr;
+    long gnuhash_addr;
 
-	// .gnu.hash
-	unsigned int nbuckets;
-	unsigned int symndx;
+    // .gnu.hash
+    unsigned int nbuckets;
+    unsigned int symndx;
     unsigned int nmaskwords;
     unsigned int shift2;
-	long bitmask_addr;
-	long hashbuckets_addr;
-	long hashvalues_addr;
+    long bitmask_addr;
+    long hashbuckets_addr;
+    long hashvalues_addr;
 
-	// so name;
-	char *soname;
+    // so name;
+    char *soname;
 } dyn_info_t;
 
 // read input
-typedef struct elf_rt_input {
+typedef struct elf_rt_input
+{
     long vmaddr;
     pid_t pid;
 } elf_rt_input_t;
 
-typedef struct elf_arch {
-    ElfW(Ehdr) *ehdr;
-    ElfW(Phdr) *phdr;
+typedef struct elf_arch
+{
+    ElfW(Ehdr) * ehdr;
+    ElfW(Phdr) * phdr;
 } elf_arch_t;
 
 // runtime elf file
-typedef struct elf_rt {
+typedef struct elf_rt
+{
     struct elf_rt_input input;
     struct elf_arch elf;
     struct dyn_info dyn;
 } elf_rt_t;
 
-long
-find_symbol(elf_rt_t *target, char *sym_name , char *lib_name);
+long find_symbol(elf_rt_t *target, char *sym_name, char *lib_name);
 
-void
-set_pid(elf_rt_t *target, pid_t pid);
+void set_pid(elf_rt_t *target, pid_t pid);
 
-bool
-elf_rt_read(elf_rt_input_t input, long addr, void *data, long len);
+bool elf_rt_read(elf_rt_input_t input, long addr, void *data, long len);
 
-bool
-elf_rt_off_read(elf_rt_input_t input, long addr, void *data, long len);
+bool elf_rt_off_read(elf_rt_input_t input, long addr, void *data, long len);
 
-char*
+char *
 elf_rt_read_string(elf_rt_input_t input, long addr);
 
-bool
-parse_elf(elf_rt_t *target);
+bool parse_elf(elf_rt_t *target);
 
-bool
-parse_header(elf_rt_t *target);
+bool parse_header(elf_rt_t *target);
 
-bool
-parse_program_headers(elf_rt_t *target);
+bool parse_program_headers(elf_rt_t *target);
 
-bool
-parse_segments(elf_rt_t *target);
+bool parse_segments(elf_rt_t *target);
 
-bool
-parse_PT_DYNAMIC(dyn_info_t *dyninfo, elf_rt_input_t input, long dyn_addr);
+bool parse_PT_DYNAMIC(dyn_info_t *dyninfo, elf_rt_input_t input, long dyn_addr);
 
-bool
-parse_DT_SONAME(dyn_info_t *dyninfo, elf_rt_input_t input, unsigned long ndx);
+bool parse_DT_SONAME(dyn_info_t *dyninfo, elf_rt_input_t input, unsigned long ndx);
 
-bool
-parse_DT_GNU_HASH(dyn_info_t *dyninfo, elf_rt_input_t input, long gnuhash_addr);
+bool parse_DT_GNU_HASH(dyn_info_t *dyninfo, elf_rt_input_t input, long gnuhash_addr);
 
-bool
-parse_DT_PLTGOT(dyn_info_t *dyninfo, elf_rt_input_t input, long gotplt_addr);
+bool parse_DT_PLTGOT(dyn_info_t *dyninfo, elf_rt_input_t input, long gotplt_addr);
 
 unsigned long
-dl_new_hash (const char *s);
+dl_new_hash(const char *s);
 
-ElfW(Sym)*
-find_symbol_in_lib(dyn_info_t *dyldinfo, elf_rt_input_t input, char *sym_name);
+ElfW(Sym) *
+    find_symbol_in_lib(dyn_info_t *dyldinfo, elf_rt_input_t input, char *sym_name);

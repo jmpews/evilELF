@@ -1,7 +1,7 @@
 #include "utils.h"
 
 unsigned char
-soloader[] =
+    soloader[] =
 	"\x90"
 	"\xeb\x13"
 	"\x58"
@@ -14,112 +14,108 @@ soloader[] =
 	"\xcc"
 	"\xe8\xe8\xff\xff\xff";
 
-void
-ptrace_attach(int pid)
+void ptrace_attach(int pid)
 {
-	if((ptrace(PTRACE_ATTACH , pid , NULL , NULL)) < 0) {
-                        perror("ptrace_attach");
-                        exit(-1);
-	}
+    if ((ptrace(PTRACE_ATTACH, pid, NULL, NULL)) < 0)
+    {
+	perror("ptrace_attach");
+	exit(-1);
+    }
 
-	waitpid(pid , NULL , WUNTRACED);
+    waitpid(pid, NULL, WUNTRACED);
 }
 
-void
-ptrace_cont(int pid)
+void ptrace_cont(int pid)
 {
-	int s;
+    int s;
 
-	if((ptrace(PTRACE_CONT , pid , NULL , NULL)) < 0) {
-		perror("ptrace_cont");
-		exit(-1);
-	}
+    if ((ptrace(PTRACE_CONT, pid, NULL, NULL)) < 0)
+    {
+	perror("ptrace_cont");
+	exit(-1);
+    }
 
-	while (!WIFSTOPPED(s)) waitpid(pid , &s , WNOHANG);
+    while (!WIFSTOPPED(s))
+	waitpid(pid, &s, WNOHANG);
 }
 
-void
-ptrace_detach(int pid)
+void ptrace_detach(int pid)
 {
-	if(ptrace(PTRACE_DETACH, pid , NULL , NULL) < 0) {
-		perror("ptrace_detach");
-		exit(-1);
-	}
+    if (ptrace(PTRACE_DETACH, pid, NULL, NULL) < 0)
+    {
+	perror("ptrace_detach");
+	exit(-1);
+    }
 }
 
-bool
-ptrace_read(int pid, unsigned long addr, void *data, unsigned int len)
+bool ptrace_read(int pid, unsigned long addr, void *data, unsigned int len)
 {
-	int bytesRead = 0;
-	int i = 0, t = 0;
-	long word = 0;
-	unsigned long *ptr = (unsigned long*)data;
+    int bytesRead = 0;
+    int i = 0, t = 0;
+    long word = 0;
+    unsigned long *ptr = (unsigned long *)data;
 
-	while(bytesRead < (len - t))
+    while (bytesRead < (len - t))
+    {
+	word = ptrace(PTRACE_PEEKTEXT, pid, addr + bytesRead, NULL);
+	if (word == -1)
 	{
-		word = ptrace(PTRACE_PEEKTEXT, pid, addr + bytesRead, NULL);
-		if(word == -1)
-		{
-			fprintf(stderr, "ptrace(PTRACE_PEEKTEXT) failed\n");
-            return false;
-		}
-		bytesRead += sizeof(long);
-        if(bytesRead > len)
-        {
-            memcpy(ptr+i, &word, sizeof(long) - (bytesRead - len));
-            break;
-        }
-		ptr[i++] = word;
+	    fprintf(stderr, "ptrace(PTRACE_PEEKTEXT) failed\n");
+	    return false;
 	}
+	bytesRead += sizeof(long);
+	if (bytesRead > len)
+	{
+	    memcpy(ptr + i, &word, sizeof(long) - (bytesRead - len));
+	    break;
+	}
+	ptr[i++] = word;
+    }
 
-	return true;
+    return true;
 }
 
-char*
+char *
 ptrace_read_string(int pid, unsigned long addr)
 {
     unsigned int str_len_limit = 1024;
     char *ndx, result;
-    char str[str_len_limit+1];
+    char str[str_len_limit + 1];
     str[str_len_limit] = '\0';
-    if(!ptrace_read(pid, addr, str, str_len_limit))
-        return NULL;
+    if (!ptrace_read(pid, addr, str, str_len_limit))
+	return NULL;
     ndx = strchr(str, '\0');
-    if(ndx == (str+str_len_limit) || ndx == str)
-        return NULL;
+    if (ndx == (str + str_len_limit) || ndx == str)
+	return NULL;
     result = malloc(ndx - str + 1);
-    memcpy(str, result, ndx-str+1);
+    memcpy(str, result, ndx - str + 1);
     return result;
 }
 
-
-void
-ptrace_write(int pid, unsigned long addr, void *vptr, int len)
+void ptrace_write(int pid, unsigned long addr, void *vptr, int len)
 {
-	int byteCount = 0;
-	long word = 0;
+    int byteCount = 0;
+    long word = 0;
 
-	while (byteCount < len)
+    while (byteCount < len)
+    {
+	memcpy(&word, vptr + byteCount, sizeof(word));
+	word = ptrace(PTRACE_POKETEXT, pid, addr + byteCount, word);
+	if (word == -1)
 	{
-		memcpy(&word, vptr + byteCount, sizeof(word));
-		word = ptrace(PTRACE_POKETEXT, pid, addr + byteCount, word);
-		if(word == -1)
-		{
-			fprintf(stderr, "ptrace(PTRACE_POKETEXT) failed\n");
-			exit(1);
-		}
-		byteCount += sizeof(word);
+	    fprintf(stderr, "ptrace(PTRACE_POKETEXT) failed\n");
+	    exit(1);
 	}
+	byteCount += sizeof(word);
+    }
 }
 
-
-void
-setaddr(unsigned char *buf , ElfW(Addr) addr)
+void setaddr(unsigned char *buf, ElfW(Addr) addr)
 {
-        *(buf) = addr;
-        *(buf+1) = addr >> 8;
-        *(buf+2) = addr >> 16;
-        *(buf+3) = addr >> 24;
+    *(buf) = addr;
+    *(buf + 1) = addr >> 8;
+    *(buf + 2) = addr >> 16;
+    *(buf + 3) = addr >> 24;
 }
 
 /* void */

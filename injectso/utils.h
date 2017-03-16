@@ -18,16 +18,11 @@
 
 #include <stdbool.h> // bool type
 
-void
-ptrace_attach(int pid);
-void
-ptrace_cont(int pid);
-void
-ptrace_detach(int pid);
-bool
-ptrace_read(int pid, unsigned long addr, void *data, unsigned int len);
-char*
+void ptrace_attach(int pid);
+void ptrace_cont(int pid);
+void ptrace_detach(int pid);
+bool ptrace_read(int pid, unsigned long addr, void *data, unsigned int len);
+char *
 ptrace_read_string(int pid, unsigned long addr);
-void
-ptrace_write(int pid, unsigned long addr, void *vptr, int len);
+void ptrace_write(int pid, unsigned long addr, void *vptr, int len);
 #endif
