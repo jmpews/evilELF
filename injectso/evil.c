@@ -1,4 +1,4 @@
-﻿#include<stdio.h>
+#include<stdio.h>
 void evilfunc()
 {
     printf("hello world\n");
