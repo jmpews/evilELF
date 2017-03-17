@@ -177,7 +177,7 @@ ElfW(Sym) *
     long bitmask_word;
     long addr;
     long sym_addr, hash_addr;
-    char symstr;
+    char *symstr;
     ElfW(Sym) *sym = malloc(sizeof(ElfW(Sym)));
 
     new_hash = dl_new_hash(sym_name);
@@ -233,7 +233,7 @@ ElfW(Sym) *
             symstr = elf_rt_read_string(input, addr);
 
             /*2. name same */
-            if (!strcmp(sym_name, symstr))
+            if (symstr && (!strcmp(sym_name, symstr)))
             {
                 free(symstr);
                 return sym;
@@ -262,7 +262,6 @@ long find_symbol(elf_rt_t *target, char *sym_name, char *lib_name)
     {
         elf_rt_read(target->input, (long)linkmap_addr, &linkmap, sizeof(struct link_map_public));
         linkmap_addr = linkmap.l_next;
-
         soname = elf_rt_read_string(target->input, (long)linkmap.l_name);
         if (!soname || !soname[0])
             continue;
