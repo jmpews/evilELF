@@ -32,7 +32,6 @@
 // linker's link_map
 typedef struct dyn_info
 {
-
     // pltgot
     struct link_map_public *linkmap_public;
 
@@ -106,4 +105,6 @@ unsigned long
 dl_new_hash(const char *s);
 
 ElfW(Sym) *
-    find_symbol_in_lib(dyn_info_t *dyldinfo, elf_rt_input_t input, char *sym_name);
+find_symbol_in_lib(dyn_info_t *dyldinfo, elf_rt_input_t input, char *sym_name);
+
+void print_elf(elf_rt_t *target);

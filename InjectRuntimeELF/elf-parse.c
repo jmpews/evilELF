@@ -22,6 +22,20 @@ elf_rt_read_string(elf_rt_input_t input, long addr)
     return ptrace_read_string(input.pid, addr);
 }
 
+void print_elf(elf_rt_t *target)
+{
+    dyn_info_t *dyninfo = &(target->dyn);
+    printf("[*] dump runtime infomation\n");
+    printf("[*] header (ignore...)\n");
+    printf("[*] dynamic: \n"
+        "\tdynsym: 0x%x\n"
+        "\tdynstr: 0x%x\n"
+        "\tgnuhash: 0x%x\n"
+        "\tnbuckets: %d\n"
+        "\tnmaskwords: %d\n",
+        dyninfo->dynsym_addr, dyninfo->dynstr_addr, dyninfo->gnuhash_addr, dyninfo->nbuckets, dyninfo->nmaskwords);
+}
+
 bool parse_elf(elf_rt_t *target)
 {
     parse_header(target);
@@ -110,7 +124,7 @@ bool parse_PT_DYNAMIC(dyn_info_t *dyninfo, elf_rt_input_t input, long dyn_addr)
         dyn_addr += sizeof(ElfW(Dyn));
         elf_rt_read(input, dyn_addr, &dyn, sizeof(ElfW(Dyn)));
     }
-    if(dtsoname_ndx)
+    if (dtsoname_ndx)
         parse_DT_SONAME(dyninfo, input, dtsoname_ndx);
     return true;
 }
