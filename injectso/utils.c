@@ -18,8 +18,8 @@ void ptrace_attach(int pid)
 {
     if ((ptrace(PTRACE_ATTACH, pid, NULL, NULL)) < 0)
     {
-	perror("ptrace_attach");
-	exit(-1);
+		perror("ptrace_attach");
+		exit(-1);
     }
 
     waitpid(pid, NULL, WUNTRACED);
@@ -51,11 +51,11 @@ void ptrace_detach(int pid)
 bool ptrace_read(int pid, unsigned long addr, void *data, unsigned int len)
 {
     int bytesRead = 0;
-    int i = 0, t = 0;
+    int i = 0;
     long word = 0;
     unsigned long *ptr = (unsigned long *)data;
 
-    while (bytesRead < (len - t))
+    while (bytesRead < len)
     {
 	word = ptrace(PTRACE_PEEKTEXT, pid, addr + bytesRead, NULL);
 	if (word == -1)
@@ -75,21 +75,34 @@ bool ptrace_read(int pid, unsigned long addr, void *data, unsigned int len)
     return true;
 }
 
-char *
-ptrace_read_string(int pid, unsigned long addr)
+long
+ptrace_memory_search(int pid, long start, long end, void *data, long len)
 {
-    unsigned int str_len_limit = 1024;
-    char *ndx, result;
-    char str[str_len_limit + 1];
-    str[str_len_limit] = '\0';
-    if (!ptrace_read(pid, addr, str, str_len_limit))
-	return NULL;
-    ndx = strchr(str, '\0');
-    if (ndx == (str + str_len_limit) || ndx == str)
-	return NULL;
-    result = malloc(ndx - str + 1);
-    memcpy(str, result, ndx - str + 1);
-    return result;
+    long addr = start;
+    char *buf = (char *)malloc(len);
+    while(addr < end)
+    {
+        if(ptrace_read(pid, addr, buf, len))
+            if(!memcmp(buf, data, len))
+                return addr;
+        addr += len;
+    }
+    return 0;
+}
+
+char *
+ptrace_read_string(int pid, unsigned long start)
+{
+    char x = '\0';
+    long end;
+    char *str = NULL;
+    end = ptrace_memory_search(pid, start, start+0x1000, &x, 1);
+    if(!end)
+        return NULL;
+    str = (char *)malloc(end-start);
+    if(ptrace_read(pid, start, str, end-start))
+        return str;
+    return NULL;
 }
 
 void ptrace_write(int pid, unsigned long addr, void *vptr, int len)

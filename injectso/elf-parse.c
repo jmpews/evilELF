@@ -82,7 +82,7 @@ bool parse_segments(elf_rt_t *target)
 bool parse_PT_DYNAMIC(dyn_info_t *dyninfo, elf_rt_input_t input, long dyn_addr)
 {
     ElfW(Dyn) dyn;
-    unsigned long dtsoname_ndx;
+    unsigned long dtsoname_ndx = 0;
     elf_rt_read(input, dyn_addr, &dyn, sizeof(ElfW(Dyn)));
     while (dyn.d_tag)
     {
@@ -92,6 +92,7 @@ bool parse_PT_DYNAMIC(dyn_info_t *dyninfo, elf_rt_input_t input, long dyn_addr)
             parse_DT_PLTGOT(dyninfo, input, dyn.d_un.d_ptr);
             break;
         case DT_GNU_HASH:
+            dyninfo->gnuhash_addr = dyn.d_un.d_ptr;
             parse_DT_GNU_HASH(dyninfo, input, dyn.d_un.d_ptr);
             break;
         case DT_SYMTAB:
@@ -101,6 +102,7 @@ bool parse_PT_DYNAMIC(dyn_info_t *dyninfo, elf_rt_input_t input, long dyn_addr)
             dyninfo->dynstr_addr = dyn.d_un.d_ptr;
             break;
         case DT_SONAME:
+            dtsoname_ndx = dyn.d_un.d_val;
             break;
         default:
             break;
@@ -108,7 +110,8 @@ bool parse_PT_DYNAMIC(dyn_info_t *dyninfo, elf_rt_input_t input, long dyn_addr)
         dyn_addr += sizeof(ElfW(Dyn));
         elf_rt_read(input, dyn_addr, &dyn, sizeof(ElfW(Dyn)));
     }
-    parse_DT_SONAME(dyninfo, input, dtsoname_ndx);
+    if(dtsoname_ndx)
+        parse_DT_SONAME(dyninfo, input, dtsoname_ndx);
     return true;
 }
 
@@ -258,9 +261,10 @@ long find_symbol(elf_rt_t *target, char *sym_name, char *lib_name)
     while (!sym_addr && linkmap_addr)
     {
         elf_rt_read(target->input, (long)linkmap_addr, &linkmap, sizeof(struct link_map_public));
+        linkmap_addr = linkmap.l_next;
 
         soname = elf_rt_read_string(target->input, (long)linkmap.l_name);
-        if (!soname)
+        if (!soname || !soname[0])
             continue;
 
         /*compare libname if its not NULL */
@@ -268,7 +272,7 @@ long find_symbol(elf_rt_t *target, char *sym_name, char *lib_name)
             if (strcmp(lib_name, soname) != 0)
                 continue;
 
-        printf("[+] search libaray path: %s\n", lib_name);
+        printf("[+] search libaray path: %s\n", soname);
         parse_PT_DYNAMIC(&dyninfo, target->input, linkmap.l_ld);
         sym = find_symbol_in_lib(&dyninfo, target->input, sym_name);
         if (sym)

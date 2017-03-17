@@ -20,9 +20,9 @@
 // echo | gcc -E -dM - | grep 64
 // ld --verbose
 #ifdef __x86_64__
-#define PROGRAM_LOAD_ADDRESS 0x08048000
-#else
 #define PROGRAM_LOAD_ADDRESS 0x400000
+#else
+#define PROGRAM_LOAD_ADDRESS 0x08048000
 #endif
 
 #define link_map_public link_map

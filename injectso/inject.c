@@ -30,6 +30,7 @@ int main(int argc, char *argv[])
 
 	elf_rt_t target;
 	set_pid(&target, pid);
+    parse_elf(&target);
 	if(!(__libc_dlopen_mode = find_symbol(&target, "__libc_dlopen_mode" , NULL))) {
 		printf("error! couldn't find __libc_dlopen_mode() ! :((\n");
 		exit(-1);
