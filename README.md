@@ -10,7 +10,6 @@ Malicious use of ELF such as .so inject, func hook and so on.
 
 #### Demo & Usage
 
-```
 #### usage
 
 ```
@@ -36,5 +35,4 @@ InjectRuntimeELF - (1.0.0) - by jmpews@gmail.com
 [*] start bucket search...
 [*] found 'evilfunc' at 0xb772353b
 [*] lib injection done!
-```
 ```
