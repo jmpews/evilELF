@@ -10,8 +10,6 @@ Malicious use of ELF such as .so inject, func hook and so on.
 
 #### Demo & Usage
 
-#### usage
-
 ```
 ➜  InjectRuntimeELF git:(master) ✗ sudo ./inject 3631 /evilELF/InjectRuntimeELF/example/evil.so
 --------------------------------------------------------------
