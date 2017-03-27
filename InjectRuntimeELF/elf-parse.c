@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "elf-parse.h"
+#include "cli.h"
 
 void set_pid(elf_rt_t *target, pid_t pid)
 {
@@ -25,9 +26,9 @@ elf_rt_read_string(elf_rt_input_t input, long addr)
 void print_elf(elf_rt_t *target)
 {
     dyn_info_t *dyninfo = &(target->dyn);
-    printf("[*] dump runtime infomation\n");
-    printf("[*] header (ignore...)\n");
-    printf("[*] dynamic: \n"
+    Sinfo("dump runtime infomation");
+    Sinfo("dumping header...");
+    Xdebug("dynamic: \n"
         "\tdynsym: 0x%x\n"
         "\tdynstr: 0x%x\n"
         "\tgnuhash: 0x%x\n"
@@ -162,7 +163,12 @@ bool parse_DT_PLTGOT(dyn_info_t *dyninfo, elf_rt_input_t input, long gotplt_addr
 
     /*now just read first link_map item, link_map locate at second of .gotplt */
     elf_rt_read(input, gotplt_addr + sizeof(long), &linkmap_public_addr, sizeof(long));
-    elf_rt_read(input, linkmap_public_addr, linkmap_public, sizeof(struct link_map_public));
+    if(linkmap_public_addr)
+        elf_rt_read(input, linkmap_public_addr, linkmap_public, sizeof(struct link_map_public));
+    else
+    {
+        Sinfo("search in ld.so, no link_map.");
+    }
 
     dyninfo->linkmap_public = linkmap_public;
     return true;
@@ -200,7 +206,7 @@ ElfW(Sym) *
     hb1 = new_hash & (__ELF_NATIVE_CLASS - 1);
     hb2 = (new_hash >> dyldinfo->shift2) & (__ELF_NATIVE_CLASS - 1);
 
-    printf("[*] start gnu hash search:\n\tnew_hash: 0x%x(%u)\n", sym_name, new_hash, new_hash);
+    Xdebug("[*] start gnu hash search:\n\tnew_hash: 0x%x(%u)\n", sym_name, new_hash, new_hash);
 
     /*ELFCLASS size */
     //__ELF_NATIVE_CLASS
@@ -208,7 +214,7 @@ ElfW(Sym) *
     /* nmaskwords must be power of 2, so that allows the modulo operation */
     /*((new_hash / __ELF_NATIVE_CLASS) % maskwords) */
     n = (new_hash / __ELF_NATIVE_CLASS) & (dyldinfo->nmaskwords - 1);
-    printf("\tn: %lu\n", n);
+    Xdebug("\tn: %lu\n", n);
 
     /*Use hash to quickly determine whether there is the symbol we need */
     addr = dyldinfo->bitmask_addr + n * sizeof(long);
@@ -222,7 +228,7 @@ ElfW(Sym) *
     /*The first index of `.dynsym` to the bucket .dynsym */
     addr = dyldinfo->hashbuckets_addr + (new_hash % dyldinfo->nbuckets) * sizeof(Elf_Symndx);
     elf_rt_read(input, addr, &symndx, sizeof(unsigned int));
-    printf("\thash buckets index: 0x%x(%u), first dynsym index: 0x%x(%u)\n", (new_hash % dyldinfo->nbuckets), (new_hash % dyldinfo->nbuckets), symndx, symndx);
+    Xdebug("\thash buckets index: 0x%x(%u), first dynsym index: 0x%x(%u)\n", (new_hash % dyldinfo->nbuckets), (new_hash % dyldinfo->nbuckets), symndx, symndx);
 
     if (symndx == 0)
         return NULL;
@@ -230,11 +236,11 @@ ElfW(Sym) *
     sym_addr = dyldinfo->dynsym_addr + symndx * sizeof(ElfW(Sym));
     hash_addr = dyldinfo->hashvalues_addr + (symndx - dyldinfo->symndx) * sizeof(unsigned int);
 
-    printf("[*] start bucket search:\n");
+    Sinfo("start bucket search...");
     do
     {
         elf_rt_read(input, hash_addr, &h2, sizeof(unsigned int));
-        printf("\th2: 0x%x(%u)\n", h2, h2);
+        Xdebug("\th2: 0x%x(%u)\n", h2, h2);
         /*1. hash value same */
         if (((h2 ^ new_hash) >> 1) == 0)
         {
@@ -268,7 +274,7 @@ long find_symbol(elf_rt_t *target, char *sym_name, char *lib_name)
     ElfW(Sym) * sym;
     dyn_info_t dyninfo;
 
-    printf("[*] start search \'%s\':\n", sym_name);
+    Xinfo("start symbol search \'%s\'...", sym_name);
 
     linkmap_addr = target->dyn.linkmap_public->l_next;
 
@@ -285,17 +291,17 @@ long find_symbol(elf_rt_t *target, char *sym_name, char *lib_name)
             if (strcmp(lib_name, soname) != 0)
                 continue;
 
-        printf("[+] search libaray path: %s\n", soname);
+        Xinfo("start search libaray: %s", soname);
         parse_PT_DYNAMIC(&dyninfo, target->input, linkmap.l_ld);
         sym = find_symbol_in_lib(&dyninfo, target->input, sym_name);
         if (sym)
         {
             sym_addr = sym->st_value + linkmap.l_addr;
-            printf("[+] Found \'%s\' at %p\n", sym_name, sym_addr);
+            Xinfo("found \'%s\' at %p", sym_name, sym_addr);
             return sym_addr;
         }
     }
 
-    printf("[-] Not found \'%s\'", sym_name);
+    Xinfo("not found \'%s\'", sym_name);
     return 0;
 }

@@ -1,0 +1,22 @@
+
+#### shellcode
+
+```
+__libc_dlopen_mode.asm
+nasm -f elf32 -o __libc_dlopen_mode.o __libc_dlopen_mode.asm
+objdump -d __libc_dlopen_mode.o
+```
+
+#### evil so
+
+```
+evil.c
+gcc -w -fPIC -shared -o evil.so evil.c
+```
+
+#### target
+
+```
+target_target.c
+gcc -o test_target test_target.c
+```
